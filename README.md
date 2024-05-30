@@ -1,0 +1,2 @@
+This document represents my final project for the SQL course, utilizing data provided by Google Analytics with a total of 2,556 records. Through this project, I have gained significant expertise in understanding and writing SQL, as well as honing my problem-solving skills.
+The results of the assignment are attached in the following link: https://console.cloud.google.com/bigquery?sq=607792661864:af8dff8a13c44bb8bf68cfcadd1a38b5
