@@ -1,0 +1,223 @@
+--query 1
+SELECT
+  FORMAT_DATE ('%Y%m',parse_datetime('%Y%m%d',date)) as month,
+  SUM(totals.visits) as visits,
+  SUM(totals.pageviews) as pageviews, 
+  SUM(totals.transactions) as transactions
+FROM `bigquery-public-data.google_analytics_sample.ga_sessions_2017*`
+  WHERE _table_suffix between '0101' and '0331'
+  Group by month
+  Order by month;
+
+--query 2
+with 
+raw_data as 
+  (SELECT
+    trafficSource.source as source,
+    SUM(totals.visits) as visits,
+    COUNT (totals.bounces) as total_no_of_bounces,
+  FROM `bigquery-public-data.google_analytics_sample.ga_sessions_201707*`
+    Group by trafficSource.source
+    Order by visits desc)
+
+SELECT 
+  source,
+  visits,
+  total_no_of_bounces,
+  ROUND((total_no_of_bounces/visits * 100),3) as bounce_rate 
+FROM raw_data;
+
+--query 3
+SELECT
+  'Month' as time_type,
+  FORMAT_DATE ('%Y%m',parse_datetime('%Y%m%d',date)) as time,
+  trafficSource.source,
+  SUM(productRevenue) / 1000000 as revenue
+FROM `bigquery-public-data.google_analytics_sample.ga_sessions_201706*`,
+  UNNEST (hits) hits,
+  UNNEST (hits.product) product
+  GROUP BY trafficSource.source, time
+  HAVING SUM(product.productRevenue) is not null
+UNION ALL
+SELECT
+  'Week' as time_type,
+  FORMAT_DATE ('%Y%W',parse_datetime('%Y%m%d',date)) as week,
+  trafficSource.source,
+  SUM(productRevenue) / 1000000 as revenue
+FROM `bigquery-public-data.google_analytics_sample.ga_sessions_201706*`,
+  UNNEST (hits) hits,
+  UNNEST (hits.product) product
+  GROUP BY trafficSource.source, week
+  HAVING SUM(product.productRevenue) is not null
+  ORDER BY source, time;
+
+--query 4
+with 
+purchase as(
+  SELECT
+    FORMAT_DATE ('%Y%m',parse_datetime('%Y%m%d',date)) as month,
+    SUM(totals.pageviews) / count( distinct fullVisitorID) as avg_pageviews_purchase
+  FROM `bigquery-public-data.google_analytics_sample.ga_sessions_2017*`,
+    UNNEST (hits) hits,
+    UNNEST (hits.product) product
+    WHERE 
+      (_table_suffix between '0601' and '0731'
+      and totals.transactions is not null
+      and productRevenue is not null)
+    Group by month
+    Order by month),
+
+non_purchase as(
+  SELECT
+    FORMAT_DATE ('%Y%m',parse_datetime('%Y%m%d',date)) as month,
+    SUM(totals.pageviews) / count( distinct fullVisitorID) as avg_pageviews_non_purchase
+  FROM `bigquery-public-data.google_analytics_sample.ga_sessions_2017*`,
+    UNNEST (hits) hits,
+    UNNEST (hits.product) product
+    WHERE 
+      (_table_suffix between '0601' and '0731'
+      and totals.transactions is null
+      and productRevenue is null)
+    Group by month
+    Order by month)
+
+SELECT 
+  a.month,
+  avg_pageviews_purchase,
+  avg_pageviews_non_purchase
+FROM purchase as a
+FUll JOIN non_purchase as b
+  on a.month = b.month
+ORDER BY a.month;
+
+--query 5
+with 
+sum_transactions as (
+  SELECT
+    FORMAT_DATE ('%Y%m',parse_datetime('%Y%m%d',date)) as month,
+    SUM(totals.transactions) as sum_trans
+  FROM `bigquery-public-data.google_analytics_sample.ga_sessions_201707*`,
+    UNNEST (hits) hits,
+    UNNEST (hits.product) product
+    WHERE 
+      (totals.transactions is not null
+      and productRevenue is not null)
+    Group by month
+    Order by month),
+
+id as (
+  SELECT
+    FORMAT_DATE ('%Y%m',parse_datetime('%Y%m%d',date)) as month,
+    count(distinct fullVisitorID) as count_id
+  FROM `bigquery-public-data.google_analytics_sample.ga_sessions_201707*`,
+    UNNEST (hits) hits,
+    UNNEST (hits.product) product
+    WHERE 
+      (totals.transactions is not null
+      and productRevenue is not null)
+    Group by month
+    Order by month)
+
+SELECT
+  a.month,
+  sum_trans / count_id as avg_revenue_by_user_per_visit
+FROM sum_transactions as a
+JOIN id as b
+  on a.month = b.month ;
+
+--query 6
+SELECT
+  FORMAT_DATE ('%Y%m',parse_datetime('%Y%m%d',date)) as month,
+  ROUND(SUM (productRevenue) / (SUM (totals.visits) * 1000000),2) as avg_revenue_by_user_per_visit
+FROM `bigquery-public-data.google_analytics_sample.ga_sessions_201707*`,
+  UNNEST (hits) hits,
+  UNNEST (hits.product) product
+  WHERE 
+    (totals.transactions is not null
+    and productRevenue is not null)
+  Group by month
+  Order by month;
+
+--query 7
+with 
+ID as (
+  SELECT DISTINCT
+    fullVisitorId
+  FROM `bigquery-public-data.google_analytics_sample.ga_sessions_201707*`,
+    UNNEST (hits) hits,
+    UNNEST (hits.product) product
+    WHERE 
+      (totals.transactions is not null
+      and productRevenue is not null
+      and v2ProductName = "YouTube Men's Vintage Henley")),
+
+other_product as (
+  SELECT 
+    fullVisitorId,
+    v2ProductName,
+    productQuantity
+  FROM `bigquery-public-data.google_analytics_sample.ga_sessions_201707*`,
+    UNNEST (hits) hits,
+    UNNEST (hits.product) product
+    WHERE 
+    (totals.transactions is not null
+      and productRevenue is not null
+      and v2ProductName <> "YouTube Men's Vintage Henley"))
+
+SELECT 
+  b.v2ProductName,
+  SUM(productQuantity) as quantity
+FROM ID a
+JOIN other_product b
+  on a.fullVisitorId = b.fullVisitorId
+  Group by b.v2ProductName;
+
+--query 8
+with
+product_view as(
+  SELECT
+    format_date("%Y%m", parse_date("%Y%m%d", date)) as month,
+    count(product.productSKU) as num_product_view
+  FROM `bigquery-public-data.google_analytics_sample.ga_sessions_*`
+  , UNNEST(hits) AS hits
+  , UNNEST(hits.product) as product
+  WHERE _TABLE_SUFFIX BETWEEN '20170101' AND '20170331'
+  AND hits.eCommerceAction.action_type = '2'
+  GROUP BY 1
+),
+
+add_to_cart as(
+  SELECT
+    format_date("%Y%m", parse_date("%Y%m%d", date)) as month,
+    count(product.productSKU) as num_addtocart
+  FROM `bigquery-public-data.google_analytics_sample.ga_sessions_*`
+  , UNNEST(hits) AS hits
+  , UNNEST(hits.product) as product
+  WHERE _TABLE_SUFFIX BETWEEN '20170101' AND '20170331'
+  AND hits.eCommerceAction.action_type = '3'
+  GROUP BY 1
+),
+
+purchase as(
+  SELECT
+    format_date("%Y%m", parse_date("%Y%m%d", date)) as month,
+    count(product.productSKU) as num_purchase
+  FROM `bigquery-public-data.google_analytics_sample.ga_sessions_*`
+  , UNNEST(hits) AS hits
+  , UNNEST(hits.product) as product
+  WHERE _TABLE_SUFFIX BETWEEN '20170101' AND '20170331'
+  AND hits.eCommerceAction.action_type = '6'
+  and product.productRevenue is not null   
+  group by 1
+)
+
+select
+    pv.*,
+    num_addtocart,
+    num_purchase,
+    round(num_addtocart*100/num_product_view,2) as add_to_cart_rate,
+    round(num_purchase*100/num_product_view,2) as purchase_rate
+from product_view pv
+left join add_to_cart a on pv.month = a.month
+left join purchase p on pv.month = p.month
+order by pv.month;
