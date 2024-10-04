@@ -1,6 +1,6 @@
 # [SQL in BigQuery] Explore Ecommerce Dataset 
 # I. Introduction
-I explored this eCommerce dataset to practice my analytical mindset in calculating useful information for various reports. By using SQL on the  BigQuery platform, I solved data mining and exploration problems, including joining data from separate spreadsheets related to eCommerce transactions.
+I explored this eCommerce dataset to practice my **analytical mindset** in calculating **useful information** for various reports. By using SQL on the  BigQuery platform, I solved **data mining** and **exploration problems**, including joining data from separate spreadsheets related to eCommerce transactions.
 # II. Dataset Access 
 * Log in to your Google Cloud Platform account and create a new project.
 * Navigate to the BigQuery console and select your newly created project.
@@ -59,4 +59,4 @@ Add_to_cart_rate = number product  add to cart/number product view. Purchase_rat
 ### SQL result:
 ![image](https://github.com/user-attachments/assets/10791443-5924-4085-81e0-3cb260140f27)
 # IV. Conclusion
-In conclusion, my exploration of the eCommerce dataset using SQL on Google BigQuery has provided valuable insights into essential metrics such as total visits, pageviews, transactions, bounce rate, and revenue per traffic source. These insights offer a solid foundation for data-driven decision-making, helping businesses optimize performance and understand customer behavior more effectively. To gain a deeper understanding of key trends and patterns, the next step will be to visualize the data using tools like Power BI or Tableau, enhancing clarity and accessibility for stakeholders. Overall, this project demonstrates the power of combining SQL with big data tools like Google BigQuery to efficiently analyze large datasets and extract actionable insights.
+In conclusion, my exploration of the eCommerce dataset using SQL on Google BigQuery has provided **valuable insights** into **essential metrics** such as total visits, pageviews, transactions, bounce rate, and revenue per traffic source. These insights offer a solid foundation for **data-driven decision-making**, helping businesses **optimize performance** and understand **customer behavior** more effectively. To gain a deeper understanding of key trends and patterns, the next step will be to visualize the data using tools like Power BI or Tableau, enhancing clarity and accessibility for stakeholders. Overall, this project demonstrates the power of combining SQL with big data tools like Google BigQuery to **efficiently analyze large datasets and extract actionable insights**.
